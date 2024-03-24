@@ -24,7 +24,7 @@ def get_transition_methods():
 width, height = 1200, 2000
 
 class VideoCreator:
-    def __init__(self, root_dir='C:\\Automate\\AI-Automation-Video-Generating\\youtube-autoupload-python\\DataLibrary'):
+    def __init__(self, root_dir='C:\\Automate\\AI-Automation-Video-Generating\\AI-Automation\\youtube-autoupload-python\\DataLibrary'):
         print("Initializing VideoCreator...")
         self.root_dir = root_dir
         self.categories = ['Love']  # Adjust as necessary
@@ -43,7 +43,7 @@ class VideoCreator:
             image_category_path = os.path.join(self.root_dir, 'Images', self.selected_category)
             # image_files = [f for f in os.listdir(image_category_path) if os.path.isfile(os.path.join(image_category_path, f))]
             image_files = [os.path.join(image_category_path, f) for f in os.listdir(image_category_path) if os.path.isfile(os.path.join(image_category_path, f))]
-            self.images = random.sample(image_files, min(len(image_files), 5))
+            self.images = random.sample(image_files, min(len(image_files), 10))
             print(f"Selected images: {self.images}")
             
             # For music
@@ -68,20 +68,6 @@ class VideoCreator:
                 img_clip = img_clip.resize(newsize=(width, height))  # Resize the clip
                 image_clips.append(img_clip)
                 
-        # for i in range(len(image_clips) - 1):
-        #     # Check if either of the clips is None before applying transition
-        #     if image_clips[i] is None or image_clips[i + 1] is None:
-        #         print("One of the clips is None, skipping transition.")
-        #         continue  # Skip this iteration if one of the clips is None
-
-        #     print(f"Applying transition between clip {i} and clip {i + 1}")
-        #     transition_method = random.choice(transition_methods)
-        #     print(f"Applying transition_method...{transition_method}")
-        #     # Now, directly use the class method without creating an instance
-        #     transition_func = getattr(VideoTransitions, transition_method)
-        #     transition_clip = transition_func(image_clips[i], image_clips[i + 1])
-        #     final_clips.append(transition_clip)
-        
         # Apply fade in and fade out transitions between consecutive clips
         for i in range(len(image_clips) - 1):
             if image_clips[i] is not None and image_clips[i + 1] is not None:  # Ensure neither clip is None
@@ -129,50 +115,56 @@ class VideoCreator:
     #     return combined_clip
 
     def create_video(self):
-        audio = None  # Initialize audio variable
+        # audio = None  # Initialize audio variable
         try:
             print("Creating video...")
             edited_images = self.apply_transitions(self.images)
-            # total_video_duration = min(60, edited_images.duration)  # seconds, but not exceeding the actual video duration
+            total_video_duration = min(60, edited_images.duration)  # seconds, but not exceeding the actual video duration
             # Load and set the audio of the final video cli
-            audio_clip = AudioFileClip(self.song).subclip(0, 60)  # Use only the first 60 seconds of the audio or the actual video duration
+            audio_clip = AudioFileClip(self.song).subclip(0, total_video_duration)  # Use only the first 60 seconds of the audio or the actual video duration
+            print("Playing audio for confirmation...")
+            # audio_clip.preview()
             final_clip = edited_images.set_audio(audio_clip)
+            final_clip.set_audio(audio_clip)
+
+            # final_clip.preview()
             print("Video creation successful.")
         except Exception as e:
             print(f"Error creating video: {e}")
-            final_clip = None
-        finally:
-            if audio:  # Close the audio clip if it's open
-                audio.close()
-            if final_clip:  # Close the final_clip if it exists
-                final_clip.close()
         return final_clip
 
-    def save_video(self, video_clip):
+    def save_video(self, video_clip, count):
         try:
             if not video_clip:
                 print("No video clip to save.")
                 return
 
             print("Saving video...")
-            save_path = os.path.join(self.root_dir, 'Generated Videos', self.selected_category, "output_video.mp4")
+            # Modify the filename to include the count
+            filename = f"output_video_{count}.mp4"
+            save_path = os.path.join(self.root_dir, 'Generated Videos', self.selected_category, filename)
             # Ensure the directory exists before trying to save
+            print(f"Does the final video have audio? {'No' if video_clip.audio is None else 'Yes'}")
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
-            video_clip.write_videofile(save_path, codec='libx264', audio_codec='aac',fps=24)
+            video_clip.write_videofile(save_path, codec='libx264', audio_codec='aac', fps=24)
             print(f"Video saved successfully at {save_path}.")
         except Exception as e:
             traceback.print_exc()  # This provides more details than just printing the error
             print(f"Error saving video: {e}")
         finally:
             if video_clip:  # Ensure to close the video clip if it exists
-                video_clip.close()
+                video_clip.close()  
 
 if __name__ == "__main__":
-    print("Script started.")
-    video_creator = VideoCreator()
-    video_creator.select_random_files()
-    if video_creator.song and video_creator.images:
-        final_clip = video_creator.create_video()
-    if final_clip:
-        video_creator.save_video(final_clip)
-    print("Script finished.")
+    for i in range(5):  # 'i' will go from 0 to 4
+        print(f"Script iteration started. Iteration: {i+1}")
+        video_creator = VideoCreator()
+        video_creator.select_random_files()
+        final_clip = None  # Initialize final_clip to ensure it's defined
+        if video_creator.song and video_creator.images:
+            final_clip = video_creator.create_video()
+        if final_clip:
+            video_creator.save_video(final_clip, i+1)  # Pass 'i+1' as the count to save_video
+        print(f"Script iteration finished. Iteration: {i+1}")
+
+
